@@ -8,6 +8,33 @@
     <title>Ajax</title>
 </head>
 <body>
-    <button id="btn">セミナー情報を取得する</button>
+    <div id="seminar"></div>
+    <script>
+
+        //取得したいセミナー情報の設定
+        Seminar.init({
+            seminar_url    : 'https://sem.biyo-funai.com',
+            seminar_cat    : 'seminar_cat=16',
+        });
+
+        //取得後
+        Seminar.appendSeminarPosts = function(data){
+            for(var d of data){
+                var div = document.createElement('div');
+                div.innerHTML = '';
+                div.innerHTML += "<a href=" + d.permalink + " target='_blank'><h3>"+d.title+"</h3>";
+                div.innerHTML += "<p><img src="+d.thumbnail+"></p>";
+                div.innerHTML += "<p>"+d.seminar_date+"</p>";
+                div.innerHTML += "<p>";
+                for(var c of d.categories){
+                    div.innerHTML += "<span>" + c + "</span>";
+                }
+                div.innerHTML += "</p>";
+                div.innerHTML += "</a>";
+                document.getElementById("seminar").appendChild(div);
+            }
+        }
+
+    </script>
 </body>
 </html>

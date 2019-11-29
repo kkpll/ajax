@@ -1,90 +1,65 @@
 //セミナー情報よみこみ
 
+var Seminar = (function(){
 
-function Seminar(url,params){
+    var seminar_url;
+    var total_page;
+    var seminar_cat;
+    var current_page   = 1;
+    var display_length = 10;
+    var future         = true;
 
-    this.baseUrl     = url + '/wp-json/wp/v2';
-    this.postUrl     = this.baseUrl + '/seminar/';
-    this.mediaUrl    = this.baseUrl + '/media/';
-    this.catUrl      = this.baseUrl + '/seminar_cat/';
-    this.params      = params;
-    this.currentPage = 1;
-    this.totalPages  = 0;
-    this.params      = [];
+    function init( args ){
 
-}
+        seminar_url    = args.seminar_url;
+        seminar_cat    = args.seminar_cat;
+        is_future      = args.is_future;
 
-Seminar.prototype.init = function(){
+        getSeminarPosts();
 
-    this.getMediaInfo();
+    }
 
-}
+    function getSeminarPosts(){
 
-Seminar.prototype.xmlhttprequest = function( url, callback ){
-    var req = new XMLHttpRequest();
-    req.onreadystatechange = callback;
-    req.open( 'GET', url, true );
-    req.send( null );
-    req = null;
-}
+        var params = [
+            "seminar_url=" + seminar_url,
+            "seminar_cat=" + seminar_cat,
+            "current_page=" + current_page,
+        ]
 
-Seminar.prototype.getSeminarPosts = function(){
+        var req = new XMLHttpRequest();
 
-    var self = this;
+        req.onreadystatechange = function(){
 
-    this.xmlhttprequest( self.postUrl + '?' + self.params.join('&'), function(){
-        if( this.readyState === 4 ){
-            self.totalPages = !self.totalPages ? this.getResponseHeader('X-WP-TotalPages') : self.totalPages;
-            var data = JSON.parse(this.responseText);
-            if( self.callback ) self.callback(data);
+            if( req.readyState === 4 ){
 
-            if( self.totalPages > self.currentPage ){
-                self.currentPage ++;
-                self.params.push( 'page=' + self.currentPage );
-                self.getSeminarPosts();
+                var data = JSON.parse(req.responseText);
+
+                total_page = !total_page ? data[0]['total_page'] : total_page ;
+
+                if( Seminar.appendSeminarPosts ) Seminar.appendSeminarPosts( data );
+
+                if( total_page > current_page ){
+                    current_page ++;
+                    getSeminarPosts();
+                }
+
             }
-        }
-    });
 
-}
+        };
 
-Seminar.prototype.getMediaUrl = function(key){
+        req.open( 'POST','ajax.php', true );
+        req.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded' );
+        req.send( params.join('&') );
 
-    var self = this;
-
-    this.xmlhttprequest( self.mediaUrl + key, function(){
-        if( this.readyState === 4 ){
-            var data = JSON.parse(this.responseText);
-            var img = document.createElement('img');
-            img.src = data['media_details']['sizes']['full']['source_url'];
-            document.body.appendChild(img);
-        }
-    });
-
-}
-
-window.onload = function(){
-
-    var seminar = new Seminar(
-        'https://sem.biyo-funai.com',
-        ['seminar_cat=16,17'],
-    );
-
-    seminar.callback = function(data){
-        for(var key in data){
-            var p = document.createElement('p');
-            var text = document.createTextNode(data[key]['id']);
-            p.appendChild(text);
-            document.body.appendChild(p);
-            this.getMediaUrl(data[key]['custom_fields']['list_img'][0]);
-        }
     }
 
-    document.getElementById('btn').onclick = function(){
-        seminar.currentPage = 1;
-        seminar.params = seminar.params.slice(0,1);
-        seminar.getSeminarPosts();
+    function appendSeminarPosts(data){}
+
+    return {
+        init        : init,
+        appendPosts : appendSeminarPosts,
     }
 
 
-}
+})();
